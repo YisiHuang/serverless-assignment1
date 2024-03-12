@@ -8,7 +8,7 @@ import { Construct } from "constructs";
 import { generateBatch } from "../shared/util";
 //import { movies } from "../seed/movies";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import { movies, movieCasts } from "../seed/movies";
+import { movies, movieCasts, movieReviews } from "../seed/movies";
 
 export class RestAPIStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -28,6 +28,13 @@ export class RestAPIStack extends cdk.Stack {
       sortKey: { name: "actorName", type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       tableName: "MovieCast",
+    });
+
+    const movieReviewsTable = new dynamodb.Table(this, "MovieReviewsTable", {
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      partitionKey: { name: "MovieId", type: dynamodb.AttributeType.NUMBER },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      tableName: "MovieReviews",
     });
 
     movieCastsTable.addLocalSecondaryIndex({
@@ -93,12 +100,13 @@ export class RestAPIStack extends cdk.Stack {
               RequestItems: {
                 [moviesTable.tableName]: generateBatch(movies),
                 [movieCastsTable.tableName]: generateBatch(movieCasts),  // Added
+                [movieReviewsTable.tableName]: generateBatch(movieReviews),
               },
             },
             physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"), //.of(Date.now().toString()),
           },
           policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
-            resources: [moviesTable.tableArn, movieCastsTable.tableArn],  // Includes movie cast
+            resources: [moviesTable.tableArn, movieCastsTable.tableArn, movieReviewsTable.tableArn],  // Includes movie cast
           }),
         });
 
