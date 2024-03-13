@@ -193,28 +193,28 @@ export const movieCasts: MovieCast[] = [
 export const movieReviews: MovieReviews[] = [
   {
     MovieId:8888,
-    Reviewername: "Yisi Huang",
+    ReviewerName: "Yisi Huang",
     ReviewDate: "2024-3-12",
     Content: "Great, I like it!",
     Rating:4,
   },
   {
     MovieId:6666,
-    Reviewername: "Yisi",
+    ReviewerName: "Yisi",
     ReviewDate: "2024-3-13",
     Content: "Great!",
     Rating:5,
   },
   {
     MovieId:2345,
-    Reviewername: "Y",
+    ReviewerName: "Y",
     ReviewDate: "2024-3-10",
     Content: "Bad!",
     Rating:1.2,
   },
   {
     MovieId:12345,
-    Reviewername: "Huang",
+    ReviewerName: "Huang",
     ReviewDate: "2024-3-12",
     Content: "I like it!",
     Rating:5,
