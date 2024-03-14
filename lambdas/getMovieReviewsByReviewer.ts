@@ -8,42 +8,26 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   try {
     console.log("Event: ", event);
     const movieId = event.pathParameters?.movieId;
-    const minRating = event.queryStringParameters?.minRating;
-    const reviewerName = event.queryStringParameters?.reviewerName;
+    const reviewerName = event.pathParameters?.reviewerName; 
 
-    if (!movieId) {
+    if (!movieId || !reviewerName) {
       return {
-        statusCode: 404,
+        statusCode: 400, 
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ message: "Missing or invalid movie Id" }),
+        body: JSON.stringify({ message: "Missing or invalid movie Id or reviewer name" }),
       };
     }
 
-    const expressionAttributeValues = {
-      ":movieId": parseInt(movieId),
-    };
-
-    let filterExpressions: string[] = [];
-
-    if (minRating) {
-      expressionAttributeValues[":minRating"] = parseInt(minRating);
-      filterExpressions.push("Rating > :minRating");
-    }
-
-    if (reviewerName) {
-      expressionAttributeValues[":reviewerName"] = reviewerName;
-      filterExpressions.push("ReviewerName = :reviewerName");
-    }
-
-    const filterExpression = filterExpressions.join(" AND ");
-
     const queryInput: QueryCommandInput = {
-        TableName: process.env.TABLE_NAME,
+        TableName: process.env.TABLE_NAME, 
         KeyConditionExpression: "MovieId = :movieId",
-        ExpressionAttributeValues: expressionAttributeValues,
-        ...(filterExpressions.length > 0 && { FilterExpression: filterExpression }),
+        FilterExpression: "ReviewerName = :reviewerName", 
+        ExpressionAttributeValues: {
+          ":movieId": parseInt(movieId),
+          ":reviewerName": reviewerName, 
+        },
     };
 
     const queryOutput = await ddbDocClient.send(new QueryCommand(queryInput));
@@ -54,7 +38,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ message: "No reviews found for this movie" }),
+        body: JSON.stringify({ message: "No reviews found for this movie by the specified reviewer" }),
       };
     }
 
@@ -72,7 +56,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({ error: "Failed to retrieve reviews" }),
+      body: JSON.stringify({ error: "Failed to retrieve reviews by the specified reviewer" }),
     };
   }
 };
