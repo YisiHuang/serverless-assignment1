@@ -8,6 +8,8 @@ import * as node from "aws-cdk-lib/aws-lambda-nodejs";
 import {generateBatch} from "../shared/util";
 import {movies, movieCasts, movieReviews} from "../seed/movies";
 import * as lambdanode from "aws-cdk-lib/aws-lambda-nodejs";
+import * as iam from 'aws-cdk-lib/aws-iam';
+
 type AppApiProps = {
   userPoolId: string;
   userPoolClientId: string;
@@ -233,6 +235,32 @@ export class AppApi extends Construct {
                 },
               }
             );
+
+            const translateServiceRole = new iam.Role(this, 'TranslateServiceRole', {
+              assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+              managedPolicies: [
+                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonDynamoDBReadOnlyAccess'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('TranslateReadOnly')
+              ],
+            });
+  
+  
+            const getReviewTranslationFn = new node.NodejsFunction(this, "GetReviewTranslationFn", {
+              runtime: lambda.Runtime.NODEJS_18_X,
+              role: translateServiceRole,
+              entry: `${__dirname}/../lambdas/translate.ts`,
+              environment: {
+                TABLE_NAME: movieReviewsTable.tableName,
+                TRANSLATE_SERVICE_ROLE: translateServiceRole.roleArn,
+                REGION: process.env.CDK_DEFAULT_REGION || 'eu-west-1',
+              },
+            });
+  
+            const translatePolicy = new iam.PolicyStatement({
+                actions: ["translate:TranslateText"], 
+                resources: ["*"], 
+            });
           
             
             // Permissions 
@@ -248,6 +276,8 @@ export class AppApi extends Construct {
             movieReviewsTable.grantReadData(getMovieReviewsByReviewerFn);
             movieReviewsTable.grantReadWriteData(updateMovieReviewsByReviewerFn);
             movieReviewsTable.grantReadData(getAllMovieReviewsByReviewerFn);
+            getReviewTranslationFn.addToRolePolicy(translatePolicy);
+            movieReviewsTable.grantReadData(getReviewTranslationFn);
 
     const authorizerFn = new node.NodejsFunction(this, "AuthorizerFn", {
       ...appCommonFnProps,
@@ -345,6 +375,12 @@ export class AppApi extends Construct {
         reviewsByReviewerEndpoint.addMethod(
           "GET", 
           new apig.LambdaIntegration(getAllMovieReviewsByReviewerFn, { proxy: true })
+        );
+
+        const TranslationEndpoint = reviewsByReviewerEndpoint.addResource("{movieId}").addResource("translation");
+        TranslationEndpoint.addMethod(
+          'GET', 
+          new apig.LambdaIntegration(getReviewTranslationFn)
         );
 
         const publicRes = appApi.root.addResource("public");

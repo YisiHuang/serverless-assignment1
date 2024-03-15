@@ -8,7 +8,7 @@ This repository contains an implementation of a serverless REST API for the AWS 
 
 ### API endpoints.
 
-[ Provide a bullet-point list of the app's endpoints (excluding the Auth API endpoints you have successfully implemented in full. Omit those in the assignment specification that you did not complete.]
+[ Provide a bullet-point list of the app's endpoints (excluding the Auth API endpoints you have successfully implemented in full. Omit those in the assignment specification that you did not complete.)]
 e.g.
  
 + POST /movies/reviews - add a movie review.
